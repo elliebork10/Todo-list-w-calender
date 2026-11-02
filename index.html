@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day & Task Budget Tracker</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0284c7',
+                            600: '#0369a1',
+                            700: '#075985',
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- SortableJS for Drag and Drop -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.0/Sortable.min.min.js"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: rgba(156, 163, 175, 0.4);
+            border-radius: 3px;
+        }
+        .task-item {
+            transition: all 0.25s ease-out;
+        }
+        .task-item.removing {
+            opacity: 0;
+            transform: translateX(30px);
+            max-height: 0;
+            margin-top: 0;
+            margin-bottom: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+            overflow: hidden;
+        }
+        .sortable-ghost {
+            opacity: 0.4;
+            background-color: rgba(2, 132, 199, 0.15) !important;
+            border: 2px dashed #0284c7 !important;
+        }
+        .sortable-drag {
+            cursor: grabbing;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 pb-12">
+    <!-- Main Wrapper -->
+    <div class="max-w-4xl mx-auto px-4 py-6 md:py-10 space-y-6">
+
+        <!-- Top Header & Settings -->
+        <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60">
+            <div>
+                <h1 class="text-2xl font-bold bg-gradient-to-r from-brand-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent">
+                    TimeBudget & Timeline
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Drag to reorder, view timeline calendar, and auto-cross off tasks</p>
+            </div>
+            
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <!-- Theme Toggle -->
+                <button id="themeToggleBtn" aria-label="Toggle Theme" class="p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl bg-slate-100 dark:bg-slate-700/60 transition">
+                    <i id="themeIcon" class="fas font-medium text-lg"></i>
+                </button>
+            </div>
+        </header>
+
+        <!-- Time Controls Bar -->
+        <section class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
+                <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Daily Window & Auto-Cross Settings</h2>
+                <!-- Auto-Checkoff Toggle Switch -->
+                <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 dark:text-slate-300">
+                    <span>Auto-Complete Passed Tasks</span>
+                    <input type="checkbox" id="autoCheckoffToggle" class="sr-only peer">
+                    <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-brand-600"></div>
+                </label>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 items-center">
+                <!-- Start Time -->
+                <div class="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/40">
+                    <label for="startTime" class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">Start</label>
+                    <input type="time" id="startTime" value="08:00" class="bg-transparent font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer">
+                </div>
+
+                <!-- End Time -->
+                <div class="flex items-center justify-between sm:justify-start gap-3 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/40">
+                    <label for="endTime" class="text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase">End</label>
+                    <input type="time" id="endTime" value="21:00" class="bg-transparent font-semibold text-slate-800 dark:text-slate-100 focus:outline-none cursor-pointer">
+                </div>
+
+                <!-- Live Status Badge -->
+                <div class="sm:col-span-2 lg:col-span-1 flex items-center justify-between lg:justify-end gap-2 bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200/60 dark:border-slate-700/40">
+                    <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">Status:</span>
+                    <span id="windowStatus" class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                        <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active Day
+                    </span>
+                </div>
+            </div>
+        </section>
+
+        <!-- Live Dashboard Metrics -->
+        <section class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <!-- Metric 1: Remaining Time Countdown -->
+            <div class="bg-gradient-to-br from-brand-600 to-indigo-700 text-white p-5 rounded-2xl shadow-md flex flex-col justify-between">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-brand-100">Time Left in Day</span>
+                    <i class="far flex font-normal text-brand-200 text-lg fa-clock"></i>
+                </div>
+                <div class="my-4">
+                    <div id="countdownTimer" class="text-3xl md:text-4xl font-extrabold tracking-tight font-mono">00h 00m 00s</div>
+                    <p id="endTimeDisplay" class="text-xs text-brand-100/90 mt-1">Target End: 9:00 PM</p>
+                </div>
+                <div class="w-full bg-white/20 h-1.5 rounded-full overflow-hidden">
+                    <div id="dayProgressFill" class="bg-white h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+
+            <!-- Metric 2: Total Planned Tasks -->
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Tasks Duration</span>
+                    <i class="fas text-slate-400 dark:text-slate-500 text-lg fa-tasks"></i>
+                </div>
+                <div class="my-4">
+                    <div id="plannedTimeDisplay" class="text-3xl md:text-4xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100">0h 00m</div>
+                    <p id="taskCountDisplay" class="text-xs text-slate-500 dark:text-slate-400 mt-1">0 tasks remaining</p>
+                </div>
+                <div class="text-xs text-slate-400 dark:text-slate-500 flex justify-between items-center">
+                    <span>Planned task workload</span>
+                </div>
+            </div>
+
+            <!-- Metric 3: Budget Status -->
+            <div id="budgetCard" class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60 flex flex-col justify-between transition-colors duration-300">
+                <div class="flex justify-between items-start">
+                    <span class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Budget Balance</span>
+                    <i id="budgetIcon" class="fas text-lg text-emerald-500 fa-scale-balanced"></i>
+                </div>
+                <div class="my-4">
+                    <div id="budgetBufferDisplay" class="text-3xl md:text-4xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400">+0h 00m</div>
+                    <p id="budgetSubtext" class="text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1">You have free time available</p>
+                </div>
+                <div class="w-full bg-slate-100 dark:bg-slate-700 h-1.5 rounded-full overflow-hidden">
+                    <div id="budgetProgressFill" class="bg-emerald-500 h-full transition-all duration-500" style="width: 0%"></div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Visual Comparison / Budget Alert Bar -->
+        <section id="budgetBanner" class="p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-900 dark:text-emerald-200 transition-all">
+            <div class="flex items-center gap-3">
+                <div id="bannerIconContainer" class="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300">
+                    <i class="fas fa-check-circle text-xl"></i>
+                </div>
+                <div>
+                    <h3 id="bannerTitle" class="font-semibold text-sm">Schedule is in Balance</h3>
+                    <p id="bannerMessage" class="text-xs text-emerald-700 dark:text-emerald-300/80">Your remaining tasks fit comfortably within your remaining daily time.</p>
+                </div>
+            </div>
+        </section>
+
+        <!-- Task Input Section -->
+        <section class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60">
+            <h2 class="text-base font-semibold mb-4 text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                <i class="fas fa-plus-circle text-brand-500"></i> Add New Task
+            </h2>
+            <form id="addTaskForm" class="space-y-4">
+                <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
+                    <!-- Title Input -->
+                    <div class="sm:col-span-6 md:col-span-7">
+                        <input type="text" id="taskTitle" placeholder="e.g., Complete project report, Workout, Study" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition text-sm">
+                    </div>
+                    <!-- Duration Input -->
+                    <div class="sm:col-span-3 md:col-span-3 flex items-center gap-2">
+                        <input type="number" id="taskDuration" min="1" max="1440" placeholder="Duration" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition text-sm">
+                        <select id="durationUnit" class="px-3 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition text-sm">
+                            <option value="mins">mins</option>
+                            <option value="hrs">hrs</option>
+                        </select>
+                    </div>
+                    <!-- Submit Button -->
+                    <div class="sm:col-span-3 md:col-span-2">
+                        <button type="submit" class="w-full h-full py-2.5 px-4 bg-brand-600 hover:bg-brand-700 text-white font-medium text-sm rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+                            <i class="fas fa-plus text-xs"></i> Add Task
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Quick Presets -->
+                <div class="flex items-center gap-2 pt-1 flex-wrap text-xs text-slate-500 dark:text-slate-400">
+                    <span class="font-medium">Quick presets:</span>
+                    <button type="button" onclick="setQuickDuration(15)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+15m</button>
+                    <button type="button" onclick="setQuickDuration(30)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+30m</button>
+                    <button type="button" onclick="setQuickDuration(45)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+45m</button>
+                    <button type="button" onclick="setQuickDuration(60)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+1h</button>
+                </div>
+            </form>
+        </section>
+
+        <!-- View Switcher Tabs & Task Section -->
+        <section class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-5 border-b border-slate-100 dark:border-slate-700/50 pb-4">
+                <!-- View Mode Tabs -->
+                <div class="flex items-center bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl">
+                    <button id="listViewTab" onclick="switchView('list')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm transition">
+                        <i class="fas fa-bars-staggered"></i> Priority List
+                    </button>
+                    <button id="calendarViewTab" onclick="switchView('calendar')" class="flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition">
+                        <i class="fas fa-calendar-week"></i> Schedule Chart
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-3">
+                    <span id="reorderTip" class="text-xs text-slate-400 dark:text-slate-500 hidden sm:inline-block">
+                        <i class="fas fa-arrows-up-down text-brand-500 mr-1"></i> Drag tasks to reorder schedule
+                    </span>
+                    <button id="clearAllBtn" class="text-xs font-medium text-slate-400 hover:text-rose-500 dark:text-slate-500 dark:hover:text-rose-400 transition flex items-center gap-1">
+                        <i class="fas fa-trash-alt text-xs"></i> Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- TAB 1: Task List View (Draggable & Reorderable) -->
+            <div id="listViewContainer">
+                <div id="taskList" class="space-y-2.5">
+                    <!-- Dynamically populated reorderable tasks -->
+                </div>
+            </div>
+
+            <!-- TAB 2: Calendar Timeline Chart View -->
+            <div id="calendarViewContainer" class="hidden">
+                <div class="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
+                    <span>Automatically schedules tasks sequentially starting from <strong id="timelineStartLabel" class="text-slate-700 dark:text-slate-200">8:00 AM</strong>:</span>
+                    <span class="flex items-center gap-2">
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Active
+                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></span> Passed
+                    </span>
+                </div>
+                <!-- Timeline Hour Visual Blocks Container -->
+                <div id="timelineChart" class="relative pl-12 pr-2 py-2 space-y-3 min-h-[280px]">
+                    <!-- Dynamically generated timeline hours and blocks -->
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="emptyState" class="hidden py-10 text-center">
+                <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto mb-3 text-lg">
+                    <i class="fas fa-clipboard-check"></i>
+                </div>
+                <p class="text-sm font-medium text-slate-600 dark:text-slate-400">All tasks completed or none added yet!</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Add your tasks above to budget your day's time.</p>
+            </div>
+        </section>
+
+    </div>
+
+    <!-- Application Script -->
+    <script>
+        // State Management
+        let tasks = JSON.parse(localStorage.getItem('timebudget_tasks')) || [
+            { id: 1, title: 'Morning Focus Work', minutes: 90, createdAt: Date.now() - 3000 },
+            { id: 2, title: 'Team Sync & Emails', minutes: 45, createdAt: Date.now() - 2000 },
+            { id: 3, title: 'Gym Session & Refresh', minutes: 60, createdAt: Date.now() - 1000 }
+        ];
+
+        let config = JSON.parse(localStorage.getItem('timebudget_config')) || {
+            startTime: "08:00",
+            endTime: "21:00",
+            darkMode: false,
+            autoCheckoff: true
+        };
+
+        let activeView = 'list';
+        let sortableInstance = null;
+
+        // DOM Elements
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        const autoCheckoffToggle = document.getElementById('autoCheckoffToggle');
+        const windowStatus = document.getElementById('windowStatus');
+        const countdownTimer = document.getElementById('countdownTimer');
+        const endTimeDisplay = document.getElementById('endTimeDisplay');
+        const dayProgressFill = document.getElementById('dayProgressFill');
+
+        const plannedTimeDisplay = document.getElementById('plannedTimeDisplay');
+        const taskCountDisplay = document.getElementById('taskCountDisplay');
+
+        const budgetCard = document.getElementById('budgetCard');
+        const budgetIcon = document.getElementById('budgetIcon');
+        const budgetBufferDisplay = document.getElementById('budgetBufferDisplay');
+        const budgetSubtext = document.getElementById('budgetSubtext');
+        const budgetProgressFill = document.getElementById('budgetProgressFill');
+
+        const budgetBanner = document.getElementById('budgetBanner');
+        const bannerIconContainer = document.getElementById('bannerIconContainer');
+        const bannerTitle = document.getElementById('bannerTitle');
+        const bannerMessage = document.getElementById('bannerMessage');
+
+        const addTaskForm = document.getElementById('addTaskForm');
+        const taskTitleInput = document.getElementById('taskTitle');
+        const taskDurationInput = document.getElementById('taskDuration');
+        const durationUnitSelect = document.getElementById('durationUnit');
+        
+        const taskList = document.getElementById('taskList');
+        const timelineChart = document.getElementById('timelineChart');
+        const listViewContainer = document.getElementById('listViewContainer');
+        const calendarViewContainer = document.getElementById('calendarViewContainer');
+        const listViewTab = document.getElementById('listViewTab');
+        const calendarViewTab = document.getElementById('calendarViewTab');
+        const timelineStartLabel = document.getElementById('timelineStartLabel');
+
+        const emptyState = document.getElementById('emptyState');
+        const clearAllBtn = document.getElementById('clearAllBtn');
+
+        const themeToggleBtn = document.getElementById('themeToggleBtn');
+        const themeIcon = document.getElementById('themeIcon');
+
+        // Initialization
+        window.addEventListener('DOMContentLoaded', () => {
+            // Set initial config inputs
+            startTimeInput.value = config.startTime;
+            endTimeInput.value = config.endTime;
+            autoCheckoffToggle.checked = config.autoCheckoff !== false;
+
+            // Theme Init
+            if (config.darkMode || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                document.documentElement.classList.add('dark');
+                config.darkMode = true;
+            }
+            updateThemeIcon();
+
+            // Initialize SortableJS Drag & Drop
+            initSortable();
+
+            // Render view and task timeline
+            renderTasks();
+
+            // Start live timer loop
+            updateMetrics();
+            setInterval(updateMetrics, 1000);
+        });
+
+        // Initialize Drag and Drop Reordering
+        function initSortable() {
+            sortableInstance = new Sortable(taskList, {
+                animation: 200,
+                handle: '.drag-handle',
+                ghostClass: 'sortable-ghost',
+                dragClass: 'sortable-drag',
+                onEnd: function (evt) {
+                    if (evt.oldIndex === evt.newIndex) return;
+                    // Move task in array
+                    const movedItem = tasks.splice(evt.oldIndex, 1)[0];
+                    tasks.splice(evt.newIndex, 0, movedItem);
+                    saveTasks();
+                    renderTasks();
+                    updateMetrics();
+                }
+            });
+        }
+
+        // Switch View Tabs
+        function switchView(view) {
+            activeView = view;
+            if (view === 'list') {
+                listViewContainer.classList.remove('hidden');
+                calendarViewContainer.classList.add('hidden');
+                listViewTab.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm transition';
+                calendarViewTab.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition';
+            } else {
+                listViewContainer.classList.add('hidden');
+                calendarViewContainer.classList.remove('hidden');
+                calendarViewTab.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm transition';
+                listViewTab.className = 'flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-100 transition';
+                renderCalendarChart();
+            }
+        }
+
+        // Save State Helpers
+        function saveTasks() {
+            localStorage.setItem('timebudget_tasks', JSON.stringify(tasks));
+        }
+
+        function saveConfig() {
+            localStorage.setItem('timebudget_config', JSON.stringify(config));
+        }
+
+        // Theme Toggle Handler
+        themeToggleBtn.addEventListener('click', () => {
+            config.darkMode = !config.darkMode;
+            document.documentElement.classList.toggle('dark', config.darkMode);
+            updateThemeIcon();
+            saveConfig();
+        });
+
+        function updateThemeIcon() {
+            if (document.documentElement.classList.contains('dark')) {
+                themeIcon.className = 'fas fa-sun text-amber-400';
+            } else {
+                themeIcon.className = 'fas fa-moon text-slate-600';
+            }
+        }
+
+        // Settings Event Handlers
+        autoCheckoffToggle.addEventListener('change', (e) => {
+            config.autoCheckoff = e.target.checked;
+            saveConfig();
+            updateMetrics();
+        });
+
+        startTimeInput.addEventListener('change', (e) => {
+            config.startTime = e.target.value;
+            saveConfig();
+            renderTasks();
+            updateMetrics();
+        });
+
+        endTimeInput.addEventListener('change', (e) => {
+            config.endTime = e.target.value;
+            saveConfig();
+            updateMetrics();
+        });
+
+        // Quick Preset Duration Helper
+        function setQuickDuration(mins) {
+            taskDurationInput.value = mins;
+            durationUnitSelect.value = 'mins';
+            taskTitleInput.focus();
+        }
+
+        // Move task position manually via buttons
+        function moveTask(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= tasks.length) return;
+            const temp = tasks[index];
+            tasks[index] = tasks[newIndex];
+            tasks[newIndex] = temp;
+            saveTasks();
+            renderTasks();
+            updateMetrics();
+        }
+
+        // Parse hh:mm string into modern Date object for today
+        function parseTimeString(timeStr) {
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            const date = new Date();
+            date.setHours(hours, minutes, 0, 0);
+            return date;
+        }
+
+        // Format Minutes into HHh MMm format
+        function formatMinutes(totalMinutes) {
+            const isNegative = totalMinutes < 0;
+            const absMins = Math.abs(totalMinutes);
+            const h = Math.floor(absMins / 60);
+            const m = Math.floor(absMins % 60);
+            const prefix = isNegative ? '-' : '';
+            return `${prefix}${h}h ${m < 10 ? '0' : ''}${m}m`;
+        }
+
+        function formatClockTime(dateObj) {
+            return dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+        }
+
+        // Compute Task Timings sequentially based on Schedule Start Time
+        function getCalculatedTasksWithTimings() {
+            let currentCursor = parseTimeString(config.startTime);
+            return tasks.map(task => {
+                const startTime = new Date(currentCursor.getTime());
+                const endTime = new Date(startTime.getTime() + task.minutes * 60000);
+                currentCursor = new Date(endTime.getTime());
+                return {
+                    ...task,
+                    startTime,
+                    endTime
+                };
+            });
+        }
+
+        // Main Metric Calculation & Auto-Checkoff Loop
+        function updateMetrics() {
+            const now = new Date();
+            const startDate = parseTimeString(config.startTime);
+            let endDate = parseTimeString(config.endTime);
+
+            // Handle midnight crossover if end time < start time
+            if (endDate <= startDate) {
+                endDate.setDate(endDate.getDate() + 1);
+            }
+
+            // Auto Checkoff Tasks whose end time has passed (if enabled)
+            if (config.autoCheckoff && tasks.length > 0) {
+                const timedTasks = getCalculatedTasksWithTimings();
+                const passedTask = timedTasks.find(t => now > t.endTime);
+                if (passedTask) {
+                    // Automatically cross off passed task
+                    completeTask(passedTask.id, true);
+                    return;
+                }
+            }
+
+            // Total day window seconds & remaining seconds
+            const totalWindowSeconds = (endDate - startDate) / 1000;
+            let remainingSeconds = (endDate - now) / 1000;
+
+            // Format End Time Display
+            const formattedEndTime = formatClockTime(endDate);
+            endTimeDisplay.textContent = `Target End: ${formattedEndTime}`;
+
+            // Check Day Window Status
+            if (now < startDate) {
+                windowStatus.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300';
+                windowStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> Not Started Yet';
+            } else if (now > endDate) {
+                windowStatus.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-300';
+                windowStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-slate-400"></span> Day Ended';
+                remainingSeconds = 0;
+            } else {
+                windowStatus.className = 'inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300';
+                windowStatus.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> Active Day';
+            }
+
+            // Update Live Countdown Timer
+            if (remainingSeconds <= 0) {
+                countdownTimer.textContent = "00h 00m 00s";
+                dayProgressFill.style.width = "100%";
+            } else {
+                const h = Math.floor(remainingSeconds / 3600);
+                const m = Math.floor((remainingSeconds % 3600) / 60);
+                const s = Math.floor(remainingSeconds % 60);
+                countdownTimer.textContent = `${h < 10 ? '0' : ''}${h}h ${m < 10 ? '0' : ''}${m}m ${s < 10 ? '0' : ''}${s}s`;
+
+                // Calculate Progress Bar for elapsed day time
+                const elapsedSeconds = (now - startDate) / 1000;
+                const dayPct = Math.min(Math.max((elapsedSeconds / totalWindowSeconds) * 100, 0), 100);
+                dayProgressFill.style.width = `${dayPct}%`;
+            }
+
+            // Calculate Tasks Metrics
+            const totalTaskMinutes = tasks.reduce((acc, item) => acc + item.minutes, 0);
+            plannedTimeDisplay.textContent = formatMinutes(totalTaskMinutes);
+            taskCountDisplay.textContent = `${tasks.length} task${tasks.length === 1 ? '' : 's'} remaining`;
+
+            // Remaining Day Time in Minutes
+            const remainingDayMinutes = Math.max(0, Math.floor(remainingSeconds / 60));
+            const budgetDifference = remainingDayMinutes - totalTaskMinutes;
+
+            // Update Budget Metric Card & Visual Banner
+            updateBudgetDisplay(budgetDifference, remainingDayMinutes, totalTaskMinutes);
+
+            // Re-render active timeline blocks if in calendar view to update current live highlighting
+            if (activeView === 'calendar') {
+                renderCalendarChart();
+            }
+        }
+
+        // Budget Visual UI updates
+        function updateBudgetDisplay(diffMins, remainingDayMins, taskMins) {
+            const formattedDiff = formatMinutes(Math.abs(diffMins));
+
+            if (diffMins < 0) {
+                // OVER BUDGET
+                budgetBufferDisplay.textContent = `-${formattedDiff}`;
+                budgetBufferDisplay.className = 'text-3xl md:text-4xl font-extrabold tracking-tight text-rose-600 dark:text-rose-400';
+                budgetSubtext.textContent = 'Tasks exceed remaining time!';
+                budgetSubtext.className = 'text-xs font-medium text-rose-600 dark:text-rose-400 mt-1';
+                budgetIcon.className = 'fas text-lg text-rose-500 fa-exclamation-triangle animate-bounce';
+
+                budgetProgressFill.style.width = '100%';
+                budgetProgressFill.className = 'bg-rose-500 h-full transition-all duration-500';
+
+                budgetBanner.className = 'p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800/50 text-rose-900 dark:text-rose-200 transition-all';
+                bannerIconContainer.className = 'p-2 rounded-lg bg-rose-100 dark:bg-rose-900/60 text-rose-600 dark:text-rose-300';
+                bannerIconContainer.innerHTML = '<i class="fas fa-exclamation-circle text-xl"></i>';
+                bannerTitle.textContent = 'Time Budget Overdraft Alert!';
+                bannerMessage.textContent = `You have planned ${formattedDiff} more task time than you have left today. Consider trimming tasks or extending your day end time.`;
+
+            } else {
+                // UNDER BUDGET / BALANCED
+                budgetBufferDisplay.textContent = `+${formattedDiff}`;
+                budgetBufferDisplay.className = 'text-3xl md:text-4xl font-extrabold tracking-tight text-emerald-600 dark:text-emerald-400';
+                budgetSubtext.textContent = 'Free time buffer available';
+                budgetSubtext.className = 'text-xs font-medium text-emerald-600 dark:text-emerald-400 mt-1';
+                budgetIcon.className = 'fas text-lg text-emerald-500 fa-scale-balanced';
+
+                const ratio = remainingDayMins > 0 ? (taskMins / remainingDayMins) * 100 : 0;
+                budgetProgressFill.style.width = `${Math.min(ratio, 100)}%`;
+                budgetProgressFill.className = 'bg-emerald-500 h-full transition-all duration-500';
+
+                budgetBanner.className = 'p-4 rounded-xl border flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 bg-emerald-50 dark:bg-emerald-950/30 border-emerald-200 dark:border-emerald-800/50 text-emerald-900 dark:text-emerald-200 transition-all';
+                bannerIconContainer.className = 'p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300';
+                bannerIconContainer.innerHTML = '<i class="fas fa-check-circle text-xl"></i>';
+                bannerTitle.textContent = 'Schedule is Balanced';
+                bannerMessage.textContent = `Your remaining tasks leave you with a healthy ${formattedDiff} buffer before your ${config.endTime} target time.`;
+            }
+        }
+
+        // Add Task Submit Handler
+        addTaskForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const title = taskTitleInput.value.trim();
+            const rawDuration = parseFloat(taskDurationInput.value);
+            const unit = durationUnitSelect.value;
+
+            if (!title || isNaN(rawDuration) || rawDuration <= 0) return;
+
+            const totalMins = unit === 'hrs' ? Math.round(rawDuration * 60) : Math.round(rawDuration);
+
+            const newTask = {
+                id: Date.now(),
+                title: title,
+                minutes: totalMins,
+                createdAt: Date.now()
+            };
+
+            tasks.push(newTask);
+            saveTasks();
+            renderTasks();
+            updateMetrics();
+
+            taskTitleInput.value = '';
+            taskDurationInput.value = '';
+            taskTitleInput.focus();
+        });
+
+        // Render Tasks List & Calendar Views
+        function renderTasks() {
+            taskList.innerHTML = '';
+
+            if (tasks.length === 0) {
+                emptyState.classList.remove('hidden');
+                timelineChart.innerHTML = '';
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            const timedTasks = getCalculatedTasksWithTimings();
+
+            timedTasks.forEach((task, index) => {
+                const item = document.createElement('div');
+                item.className = 'task-item flex items-center justify-between p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200/80 dark:border-slate-700/50 hover:border-slate-300 dark:hover:border-slate-600 group';
+                item.setAttribute('data-id', task.id);
+
+                const startTimeStr = formatClockTime(task.startTime);
+                const endTimeStr = formatClockTime(task.endTime);
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-3 min-w-0 pr-2">
+                        <!-- Drag Handle -->
+                        <span class="drag-handle cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-1">
+                            <i class="fas fa-grip-vertical"></i>
+                        </span>
+
+                        <!-- Checkoff Button -->
+                        <button onclick="completeTask(${task.id})" title="Mark Complete" class="w-6 h-6 rounded-lg border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-500 dark:hover:border-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-transparent hover:text-emerald-500 transition flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-xs"></i>
+                        </button>
+
+                        <div class="min-w-0">
+                            <p class="text-sm font-medium text-slate-800 dark:text-slate-200 truncate">${escapeHtml(task.title)}</p>
+                            <p class="text-[11px] text-slate-400 dark:text-slate-500 flex items-center gap-1">
+                                <i class="far fa-clock text-[10px]"></i> ${startTimeStr} – ${endTimeStr}
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-2 flex-shrink-0">
+                        <!-- Up / Down Reorder Buttons -->
+                        <div class="flex items-center opacity-70 group-hover:opacity-100 transition">
+                            <button onclick="moveTask(${index}, -1)" ${index === 0 ? 'disabled class="p-1 text-slate-200 dark:text-slate-700 cursor-not-allowed"' : 'class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"'} title="Move Up">
+                                <i class="fas fa-chevron-up text-xs"></i>
+                            </button>
+                            <button onclick="moveTask(${index}, 1)" ${index === tasks.length - 1 ? 'disabled class="p-1 text-slate-200 dark:text-slate-700 cursor-not-allowed"' : 'class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"'} title="Move Down">
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                        </div>
+
+                        <span class="inline-flex items-center gap-1 text-xs font-semibold px-2.5 py-1 rounded-lg bg-slate-200/60 dark:bg-slate-700/60 text-slate-700 dark:text-slate-300 ml-1">
+                            ${formatMinutes(task.minutes)}
+                        </span>
+
+                        <button onclick="removeTask(${task.id})" title="Delete Task" class="p-1.5 text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 transition ml-1">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                `;
+
+                taskList.appendChild(item);
+            });
+
+            if (activeView === 'calendar') {
+                renderCalendarChart();
+            }
+        }
+
+        // Render Calendar Timeline Chart
+        function renderCalendarChart() {
+            timelineStartLabel.textContent = formatClockTime(parseTimeString(config.startTime));
+            timelineChart.innerHTML = '';
+
+            if (tasks.length === 0) return;
+
+            const timedTasks = getCalculatedTasksWithTimings();
+            const now = new Date();
+
+            // Timeline Vertical Line
+            const line = document.createElement('div');
+            line.className = 'absolute left-6 top-0 bottom-0 w-0.5 bg-slate-200 dark:bg-slate-700 z-0';
+            timelineChart.appendChild(line);
+
+            timedTasks.forEach((task) => {
+                const isCurrent = now >= task.startTime && now <= task.endTime;
+                const isPassed = now > task.endTime;
+
+                const block = document.createElement('div');
+                block.className = `relative z-10 p-3.5 rounded-xl border transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-2 ${
+                    isCurrent 
+                        ? 'bg-indigo-50/90 dark:bg-indigo-950/40 border-indigo-300 dark:border-indigo-700 shadow-sm ring-2 ring-indigo-500/20' 
+                        : isPassed
+                            ? 'bg-slate-100/70 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700/50 opacity-70'
+                            : 'bg-white dark:bg-slate-800 border-slate-200/80 dark:border-slate-700/60'
+                }`;
+
+                const badgeBg = isCurrent 
+                    ? 'bg-indigo-600 text-white' 
+                    : isPassed 
+                        ? 'bg-slate-300 dark:bg-slate-700 text-slate-600 dark:text-slate-400' 
+                        : 'bg-brand-100 dark:bg-brand-950/60 text-brand-700 dark:text-brand-300';
+
+                block.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-3 h-3 rounded-full flex-shrink-0 -ml-[23px] ring-4 ring-white dark:ring-slate-800 ${
+                            isCurrent ? 'bg-indigo-600 animate-ping' : isPassed ? 'bg-slate-400' : 'bg-brand-500'
+                        }"></span>
+
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-sm text-slate-800 dark:text-slate-100">${escapeHtml(task.title)}</span>
+                                ${isCurrent ? '<span class="text-[10px] font-bold tracking-wider uppercase px-2 py-0.5 rounded-full bg-indigo-100 dark:bg-indigo-900 text-indigo-700 dark:text-indigo-300">Active Now</span>' : ''}
+                            </div>
+                            <span class="text-xs text-slate-400 dark:text-slate-500">
+                                <i class="far fa-clock text-[10px] mr-0.5"></i> ${formatClockTime(task.startTime)} – ${formatClockTime(task.endTime)}
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-between sm:justify-end gap-3 pt-2 sm:pt-0 border-t sm:border-0 border-slate-100 dark:border-slate-700/40">
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-lg ${badgeBg}">
+                            ${formatMinutes(task.minutes)}
+                        </span>
+                        <button onclick="completeTask(${task.id})" class="text-xs font-medium text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 transition">
+                            <i class="fas fa-check mr-1"></i> Check off
+                        </button>
+                    </div>
+                `;
+
+                timelineChart.appendChild(block);
+            });
+        }
+
+        // Complete/Remove Task Handler
+        function completeTask(id, auto = false) {
+            const el = document.querySelector(`.task-item[data-id="${id}"]`);
+            if (el) {
+                el.classList.add('removing');
+                setTimeout(() => {
+                    tasks = tasks.filter(t => t.id !== id);
+                    saveTasks();
+                    renderTasks();
+                    updateMetrics();
+                }, 250);
+            } else {
+                tasks = tasks.filter(t => t.id !== id);
+                saveTasks();
+                renderTasks();
+                updateMetrics();
+            }
+        }
+
+        function removeTask(id) {
+            completeTask(id);
+        }
+
+        // Clear All Tasks
+        clearAllBtn.addEventListener('click', () => {
+            if (tasks.length === 0) return;
+            tasks = [];
+            saveTasks();
+            renderTasks();
+            updateMetrics();
+        });
+
+        // HTML Escaping Utility
+        function escapeHtml(str) {
+            return str.replace(/[&<>"']/g, function(m) {
+                return {
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#039;'
+                }[m];
+            });
+        }
+    </script>
+</body>
+</html>
