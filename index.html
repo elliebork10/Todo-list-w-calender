@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Day & Task Schedule Planner</title>
+    <title>Day Schedule & Task Planner</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -31,33 +31,15 @@
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        ::-webkit-scrollbar {
-            width: 6px;
-            height: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: transparent;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: rgba(156, 163, 175, 0.4);
-            border-radius: 3px;
-        }
-        .task-item {
-            transition: all 0.2s ease-out;
-        }
-        .sortable-ghost {
-            opacity: 0.3;
-            background-color: rgba(2, 132, 199, 0.15) !important;
-            border: 2px dashed #0284c7 !important;
-        }
-        .sortable-drag {
-            cursor: grabbing;
-        }
+        body { font-family: 'Inter', sans-serif; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: rgba(156, 163, 175, 0.4); border-radius: 3px; }
+        .task-item { transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1); }
+        .sortable-ghost { opacity: 0.25; background-color: rgba(2, 132, 199, 0.2) !important; border: 2px dashed #0284c7 !important; }
+        .sortable-drag { cursor: grabbing; scale: 1.02; }
     </style>
 </head>
 <body class="bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 min-h-screen transition-colors duration-300 pb-16">
@@ -70,22 +52,43 @@
                 <h1 class="text-2xl font-bold bg-gradient-to-r from-brand-600 to-indigo-600 dark:from-sky-400 dark:to-indigo-400 bg-clip-text text-transparent">
                     Day Schedule & Task Planner
                 </h1>
-                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Reorder, edit start/end times, and reschedule tasks seamlessly</p>
+                <p class="text-xs sm:text-sm text-slate-500 dark:text-slate-400">Budget your time & sync across devices</p>
             </div>
             
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <!-- Auth Container -->
+                <div id="authContainer" class="flex items-center gap-2">
+                    <button id="googleSignInBtn" class="flex items-center gap-2 px-3 py-2 bg-white dark:bg-slate-700 hover:bg-slate-50 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-slate-600 shadow-sm transition">
+                        <svg class="w-4 h-4" viewBox="0 0 24 24">
+                            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+                            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+                            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+                            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+                        </svg>
+                        <span>Sign in with Google</span>
+                    </button>
+
+                    <div id="userProfile" class="hidden flex items-center gap-2 bg-slate-100 dark:bg-slate-700/60 pl-2 pr-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-600">
+                        <img id="userAvatar" src="" alt="Avatar" class="w-6 h-6 rounded-full border border-slate-300 dark:border-slate-500">
+                        <span id="userName" class="text-xs font-semibold text-slate-700 dark:text-slate-200 max-w-[100px] truncate"></span>
+                        <button id="signOutBtn" title="Sign Out" class="text-slate-400 hover:text-rose-500 dark:hover:text-rose-400 ml-1">
+                            <i class="fas fa-right-from-bracket text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+
                 <button id="themeToggleBtn" aria-label="Toggle Theme" class="p-2.5 text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 rounded-xl bg-slate-100 dark:bg-slate-700/60 transition">
                     <i id="themeIcon" class="fas text-lg"></i>
                 </button>
             </div>
         </header>
 
-        <!-- Time Window & Auto-Checkoff Settings -->
+        <!-- Time Window & Settings -->
         <section class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 mb-3">
                 <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">Day Schedule Window</h2>
                 <label class="inline-flex items-center gap-2 cursor-pointer text-xs font-medium text-slate-600 dark:text-slate-300">
-                    <span>Auto-Complete Passed Tasks</span>
+                    <span>Auto-Checkoff Expired Tasks</span>
                     <input type="checkbox" id="autoCheckoffToggle" class="sr-only peer">
                     <div class="relative w-9 h-5 bg-slate-200 peer-focus:outline-none rounded-full peer dark:bg-slate-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all dark:border-slate-600 peer-checked:bg-brand-600"></div>
                 </label>
@@ -178,7 +181,7 @@
             <form id="addTaskForm" class="space-y-4">
                 <div class="grid grid-cols-1 sm:grid-cols-12 gap-3">
                     <div class="sm:col-span-6 md:col-span-7">
-                        <input type="text" id="taskTitle" placeholder="Task name (e.g. Planning, Gym, Study)..." required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition text-sm">
+                        <input type="text" id="taskTitle" placeholder="Task name (e.g. Focus Session, Workout, Homework)..." required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition text-sm">
                     </div>
                     <div class="sm:col-span-3 md:col-span-3 flex items-center gap-2">
                         <input type="number" id="taskDuration" min="1" max="1440" placeholder="Duration" required class="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 focus:border-brand-500 transition text-sm">
@@ -195,7 +198,7 @@
                 </div>
 
                 <div class="flex items-center gap-2 pt-1 flex-wrap text-xs text-slate-500 dark:text-slate-400">
-                    <span class="font-medium">Quick duration:</span>
+                    <span class="font-medium">Quick duration presets:</span>
                     <button type="button" onclick="setQuickDuration(15)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+15m</button>
                     <button type="button" onclick="setQuickDuration(30)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+30m</button>
                     <button type="button" onclick="setQuickDuration(45)" class="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-700/60 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 transition">+45m</button>
@@ -206,11 +209,11 @@
 
         <!-- Tasks Management Section -->
         <section class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200/80 dark:border-slate-700/60">
-            <!-- View Mode & Action Toolbar -->
+            <!-- Toolbar -->
             <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 mb-5 border-b border-slate-100 dark:border-slate-700/50 pb-4">
                 
                 <div class="flex items-center gap-2 flex-wrap">
-                    <!-- View Mode Switcher -->
+                    <!-- View Switcher -->
                     <div class="flex items-center bg-slate-100 dark:bg-slate-900/60 p-1 rounded-xl">
                         <button id="listViewTab" onclick="switchView('list')" class="flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm transition">
                             <i class="fas fa-list-ul"></i> List View
@@ -228,9 +231,9 @@
                     </div>
                 </div>
 
-                <!-- Reschedule & Cleanup Controls -->
+                <!-- Action Controls -->
                 <div class="flex items-center gap-2 w-full md:w-auto justify-end flex-wrap">
-                    <button onclick="rescheduleAllTasks()" title="Auto-chain remaining task start times sequentially" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
+                    <button onclick="rescheduleAllTasks()" title="Sequential auto-chain starting from now or schedule start" class="px-3 py-1.5 bg-indigo-50 dark:bg-indigo-950/50 hover:bg-indigo-100 dark:hover:bg-indigo-900/60 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800/60 rounded-xl text-xs font-medium transition flex items-center gap-1.5">
                         <i class="fas fa-wand-magic-sparkles text-xs"></i> Reschedule Timeline
                     </button>
                     <button onclick="clearCompletedTasks()" class="px-3 py-1.5 text-xs font-medium text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition flex items-center gap-1">
@@ -244,10 +247,10 @@
                 <div id="taskList" class="space-y-2.5"></div>
             </div>
 
-            <!-- Interactive Schedule Chart View -->
+            <!-- Schedule Chart View -->
             <div id="calendarViewContainer" class="hidden">
                 <div class="mb-3 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span>Sequential timeline starting at <strong id="timelineStartLabel" class="text-slate-700 dark:text-slate-200">8:00 AM</strong>:</span>
+                    <span>Timeline visualization starting at <strong id="timelineStartLabel" class="text-slate-700 dark:text-slate-200">8:00 AM</strong>:</span>
                     <span class="flex items-center gap-2">
                         <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500"></span> Active
                         <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span> Done
@@ -258,12 +261,12 @@
             </div>
 
             <!-- Empty State -->
-            <div id="emptyState" class="hidden py-10 text-center">
+            <div id="emptyState" class="hidden py-12 text-center">
                 <div class="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 flex items-center justify-center mx-auto mb-3 text-lg">
                     <i class="fas fa-clipboard-list"></i>
                 </div>
-                <p class="text-sm font-medium text-slate-600 dark:text-slate-400">No tasks found</p>
-                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Add tasks above or switch filter tab.</p>
+                <p class="text-sm font-medium text-slate-600 dark:text-slate-400">No tasks in this list</p>
+                <p class="text-xs text-slate-400 dark:text-slate-500 mt-1">Add tasks above to start budgeting your day.</p>
             </div>
         </section>
     </div>
@@ -273,7 +276,7 @@
         <div class="bg-white dark:bg-slate-800 rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 dark:border-slate-700 space-y-4">
             <div class="flex items-center justify-between border-b border-slate-100 dark:border-slate-700/60 pb-3">
                 <h3 class="font-semibold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                    <i class="fas fa-pen-to-square text-brand-500"></i> Edit & Reschedule Task
+                    <i class="fas fa-pen-to-square text-brand-500"></i> Edit Task
                 </h3>
                 <button onclick="closeEditModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
                     <i class="fas fa-times"></i>
@@ -311,23 +314,128 @@
         </div>
     </div>
 
-    <!-- Script Logic -->
-    <script>
-        // Data State
-        let tasks = JSON.parse(localStorage.getItem('timebudget_tasks')) || [
-            { id: 1, title: 'Morning Focus Work', minutes: 90, completed: false, customStart: null },
-            { id: 2, title: 'Team Sync & Emails', minutes: 45, completed: false, customStart: null },
-            { id: 3, title: 'Gym Session & Refresh', minutes: 60, completed: false, customStart: null }
+    <!-- Firebase Module Integration -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInWithCustomToken, signInAnonymously, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'day-schedule-app';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
+
+        let db = null;
+        let auth = null;
+        let currentUser = null;
+        let unsubScheduleListener = null;
+
+        // Initial default state
+        window.tasks = JSON.parse(localStorage.getItem('timebudget_tasks')) || [
+            { id: 1, title: 'Morning Focus Session', minutes: 90, completed: false, customStart: null },
+            { id: 2, title: 'Team Sync & Inbox Zero', minutes: 45, completed: false, customStart: null },
+            { id: 3, title: 'Workout & Lunch Break', minutes: 60, completed: false, customStart: null }
         ];
 
-        let config = JSON.parse(localStorage.getItem('timebudget_config')) || {
+        window.config = JSON.parse(localStorage.getItem('timebudget_config')) || {
             startTime: "08:00",
             endTime: "21:00",
             darkMode: false,
             autoCheckoff: true
         };
 
-        let currentFilter = 'all'; // 'all', 'active', 'completed'
+        if (firebaseConfig) {
+            const app = initializeApp(firebaseConfig);
+            auth = getAuth(app);
+            db = getFirestore(app);
+
+            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                signInWithCustomToken(auth, __initial_auth_token).catch(() => signInAnonymously(auth));
+            } else {
+                signInAnonymously(auth);
+            }
+
+            onAuthStateChanged(auth, (user) => {
+                currentUser = user;
+                updateAuthUI(user);
+                if (user) {
+                    setupCloudSync(user.uid);
+                }
+            });
+
+            document.getElementById('googleSignInBtn').addEventListener('click', () => {
+                const provider = new GoogleAuthProvider();
+                signInWithPopup(auth, provider).catch((err) => {
+                    console.error("Sign-in error:", err);
+                });
+            });
+
+            document.getElementById('signOutBtn').addEventListener('click', () => {
+                signOut(auth).then(() => {
+                    signInAnonymously(auth);
+                });
+            });
+        }
+
+        function updateAuthUI(user) {
+            const googleBtn = document.getElementById('googleSignInBtn');
+            const userProfile = document.getElementById('userProfile');
+            const userAvatar = document.getElementById('userAvatar');
+            const userName = document.getElementById('userName');
+
+            if (user && !user.isAnonymous) {
+                googleBtn.classList.add('hidden');
+                userProfile.classList.remove('hidden');
+                userAvatar.src = user.photoURL || `https://placehold.co/100x100/0284c7/ffffff?text=${user.displayName ? user.displayName.charAt(0) : 'U'}`;
+                userName.textContent = user.displayName || user.email || 'User';
+            } else {
+                googleBtn.classList.remove('hidden');
+                userProfile.classList.add('hidden');
+            }
+        }
+
+        function setupCloudSync(uid) {
+            if (!db) return;
+            const docRef = doc(db, 'artifacts', appId, 'users', uid, 'schedule', 'data');
+
+            if (unsubScheduleListener) unsubScheduleListener();
+
+            unsubScheduleListener = onSnapshot(docRef, (snapshot) => {
+                if (snapshot.exists()) {
+                    const data = snapshot.data();
+                    if (data.tasks) window.tasks = data.tasks;
+                    if (data.config) {
+                        window.config = { ...window.config, ...data.config };
+                        document.getElementById('startTime').value = window.config.startTime;
+                        document.getElementById('endTime').value = window.config.endTime;
+                        document.getElementById('autoCheckoffToggle').checked = window.config.autoCheckoff !== false;
+                    }
+                    window.renderTasks();
+                    window.updateMetrics();
+                } else {
+                    window.syncDataToCloud();
+                }
+            }, (error) => {
+                console.error("Firestore sync error:", error);
+            });
+        }
+
+        window.syncDataToCloud = function() {
+            localStorage.setItem('timebudget_tasks', JSON.stringify(window.tasks));
+            localStorage.setItem('timebudget_config', JSON.stringify(window.config));
+
+            if (db && currentUser) {
+                const docRef = doc(db, 'artifacts', appId, 'users', currentUser.uid, 'schedule', 'data');
+                setDoc(docRef, {
+                    tasks: window.tasks,
+                    config: window.config,
+                    updatedAt: new Date().toISOString()
+                }, { merge: true }).catch(err => console.error("Cloud sync save error:", err));
+            }
+        };
+    </script>
+
+    <!-- Main Logic -->
+    <script>
+        let currentFilter = 'all'; 
         let activeView = 'list';
         let sortableInstance = null;
 
@@ -378,15 +486,14 @@
         const themeToggleBtn = document.getElementById('themeToggleBtn');
         const themeIcon = document.getElementById('themeIcon');
 
-        // Initializer
         window.addEventListener('DOMContentLoaded', () => {
-            startTimeInput.value = config.startTime;
-            endTimeInput.value = config.endTime;
-            autoCheckoffToggle.checked = config.autoCheckoff !== false;
+            startTimeInput.value = window.config.startTime;
+            endTimeInput.value = window.config.endTime;
+            autoCheckoffToggle.checked = window.config.autoCheckoff !== false;
 
-            if (config.darkMode || window.matchMedia('(prefers-color-scheme: dark)').matches) {
+            if (window.config.darkMode || window.matchMedia('(prefers-color-scheme: dark)').matches) {
                 document.documentElement.classList.add('dark');
-                config.darkMode = true;
+                window.config.darkMode = true;
             }
             updateThemeIcon();
 
@@ -404,29 +511,20 @@
                 dragClass: 'sortable-drag',
                 onEnd: function (evt) {
                     if (evt.oldIndex === evt.newIndex) return;
-                    const movedItem = tasks.splice(evt.oldIndex, 1)[0];
-                    tasks.splice(evt.newIndex, 0, movedItem);
-                    saveTasks();
+                    const movedItem = window.tasks.splice(evt.oldIndex, 1)[0];
+                    window.tasks.splice(evt.newIndex, 0, movedItem);
+                    if (window.syncDataToCloud) window.syncDataToCloud();
                     renderTasks();
                     updateMetrics();
                 }
             });
         }
 
-        function saveTasks() {
-            localStorage.setItem('timebudget_tasks', JSON.stringify(tasks));
-        }
-
-        function saveConfig() {
-            localStorage.setItem('timebudget_config', JSON.stringify(config));
-        }
-
-        // Theme Handling
         themeToggleBtn.addEventListener('click', () => {
-            config.darkMode = !config.darkMode;
-            document.documentElement.classList.toggle('dark', config.darkMode);
+            window.config.darkMode = !window.config.darkMode;
+            document.documentElement.classList.toggle('dark', window.config.darkMode);
             updateThemeIcon();
-            saveConfig();
+            if (window.syncDataToCloud) window.syncDataToCloud();
         });
 
         function updateThemeIcon() {
@@ -435,23 +533,22 @@
                 : 'fas fa-moon text-slate-600';
         }
 
-        // Time Window Changes
         startTimeInput.addEventListener('change', (e) => {
-            config.startTime = e.target.value;
-            saveConfig();
+            window.config.startTime = e.target.value;
+            if (window.syncDataToCloud) window.syncDataToCloud();
             renderTasks();
             updateMetrics();
         });
 
         endTimeInput.addEventListener('change', (e) => {
-            config.endTime = e.target.value;
-            saveConfig();
+            window.config.endTime = e.target.value;
+            if (window.syncDataToCloud) window.syncDataToCloud();
             updateMetrics();
         });
 
         autoCheckoffToggle.addEventListener('change', (e) => {
-            config.autoCheckoff = e.target.checked;
-            saveConfig();
+            window.config.autoCheckoff = e.target.checked;
+            if (window.syncDataToCloud) window.syncDataToCloud();
             updateMetrics();
         });
 
@@ -505,11 +602,10 @@
             return dateObj.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
         }
 
-        // Calculate Task Start/End Times dynamically or using custom start times
         function getCalculatedTasksWithTimings() {
-            let cursor = parseTimeString(config.startTime);
+            let cursor = parseTimeString(window.config.startTime);
 
-            return tasks.map(task => {
+            return window.tasks.map(task => {
                 let startTime;
                 if (task.customStart) {
                     startTime = parseTimeString(task.customStart);
@@ -520,38 +616,32 @@
                 const endTime = new Date(startTime.getTime() + task.minutes * 60000);
                 cursor = new Date(endTime.getTime());
 
-                return {
-                    ...task,
-                    startTime,
-                    endTime
-                };
+                return { ...task, startTime, endTime };
             });
         }
 
-        // Reschedule All remaining active tasks sequentially
         function rescheduleAllTasks() {
-            tasks = tasks.map(t => ({ ...t, customStart: null }));
-            saveTasks();
+            window.tasks = window.tasks.map(t => ({ ...t, customStart: null }));
+            if (window.syncDataToCloud) window.syncDataToCloud();
             renderTasks();
             updateMetrics();
         }
 
         function updateMetrics() {
             const now = new Date();
-            const startDate = parseTimeString(config.startTime);
-            let endDate = parseTimeString(config.endTime);
+            const startDate = parseTimeString(window.config.startTime);
+            let endDate = parseTimeString(window.config.endTime);
 
             if (endDate <= startDate) {
                 endDate.setDate(endDate.getDate() + 1);
             }
 
-            // Auto-checkoff if task passed
-            if (config.autoCheckoff && tasks.length > 0) {
+            if (window.config.autoCheckoff && window.tasks.length > 0) {
                 const timedTasks = getCalculatedTasksWithTimings();
                 const passedTask = timedTasks.find(t => !t.completed && now > t.endTime);
                 if (passedTask) {
                     passedTask.completed = true;
-                    saveTasks();
+                    if (window.syncDataToCloud) window.syncDataToCloud();
                     renderTasks();
                 }
             }
@@ -587,7 +677,7 @@
                 dayProgressFill.style.width = `${dayPct}%`;
             }
 
-            const activeTasks = tasks.filter(t => !t.completed);
+            const activeTasks = window.tasks.filter(t => !t.completed);
             const totalActiveMinutes = activeTasks.reduce((acc, t) => acc + t.minutes, 0);
 
             plannedTimeDisplay.textContent = formatMinutes(totalActiveMinutes);
@@ -636,11 +726,10 @@
                 bannerIconContainer.className = 'p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/60 text-emerald-600 dark:text-emerald-300';
                 bannerIconContainer.innerHTML = '<i class="fas fa-check-circle text-xl"></i>';
                 bannerTitle.textContent = 'Schedule Balanced';
-                bannerMessage.textContent = `Your remaining tasks fit smoothly with a ${formattedDiff} free buffer before ${config.endTime}.`;
+                bannerMessage.textContent = `Your remaining tasks fit smoothly with a ${formattedDiff} free buffer before ${window.config.endTime}.`;
             }
         }
 
-        // Add Task Form Submit
         addTaskForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const title = taskTitleInput.value.trim();
@@ -651,7 +740,7 @@
 
             const totalMins = unit === 'hrs' ? Math.round(rawDuration * 60) : Math.round(rawDuration);
 
-            tasks.push({
+            window.tasks.push({
                 id: Date.now(),
                 title,
                 minutes: totalMins,
@@ -659,7 +748,7 @@
                 customStart: null
             });
 
-            saveTasks();
+            if (window.syncDataToCloud) window.syncDataToCloud();
             renderTasks();
             updateMetrics();
 
@@ -668,32 +757,29 @@
             taskTitleInput.focus();
         });
 
-        // Move task position up or down
         function moveTask(index, direction) {
             const newIndex = index + direction;
-            if (newIndex < 0 || newIndex >= tasks.length) return;
-            const temp = tasks[index];
-            tasks[index] = tasks[newIndex];
-            tasks[newIndex] = temp;
-            saveTasks();
+            if (newIndex < 0 || newIndex >= window.tasks.length) return;
+            const temp = window.tasks[index];
+            window.tasks[index] = window.tasks[newIndex];
+            window.tasks[newIndex] = temp;
+            if (window.syncDataToCloud) window.syncDataToCloud();
             renderTasks();
             updateMetrics();
         }
 
-        // Toggle Task Completion
         function toggleTaskComplete(id) {
-            const task = tasks.find(t => t.id === id);
+            const task = window.tasks.find(t => t.id === id);
             if (task) {
                 task.completed = !task.completed;
-                saveTasks();
+                if (window.syncDataToCloud) window.syncDataToCloud();
                 renderTasks();
                 updateMetrics();
             }
         }
 
-        // Open Edit Modal
         function openEditModal(id) {
-            const task = tasks.find(t => t.id === id);
+            const task = window.tasks.find(t => t.id === id);
             if (!task) return;
 
             editTaskId.value = task.id;
@@ -711,41 +797,37 @@
         editTaskForm.addEventListener('submit', (e) => {
             e.preventDefault();
             const id = parseInt(editTaskId.value);
-            const task = tasks.find(t => t.id === id);
+            const task = window.tasks.find(t => t.id === id);
             if (task) {
                 task.title = editTaskTitle.value.trim();
                 task.minutes = parseInt(editTaskDuration.value) || task.minutes;
                 task.customStart = editTaskStartTime.value || null;
-                saveTasks();
+                if (window.syncDataToCloud) window.syncDataToCloud();
                 renderTasks();
                 updateMetrics();
             }
             closeEditModal();
         });
 
-        // Delete Individual Task
         function deleteTask(id) {
-            tasks = tasks.filter(t => t.id !== id);
-            saveTasks();
+            window.tasks = window.tasks.filter(t => t.id !== id);
+            if (window.syncDataToCloud) window.syncDataToCloud();
             renderTasks();
             updateMetrics();
         }
 
-        // Clear All Completed Tasks
         function clearCompletedTasks() {
-            tasks = tasks.filter(t => !t.completed);
-            saveTasks();
+            window.tasks = window.tasks.filter(t => !t.completed);
+            if (window.syncDataToCloud) window.syncDataToCloud();
             renderTasks();
             updateMetrics();
         }
 
-        // Render List View
         function renderTasks() {
             taskList.innerHTML = '';
 
             const timedTasks = getCalculatedTasksWithTimings();
             
-            // Filter tasks based on selected tab
             const filteredTasks = timedTasks.filter(t => {
                 if (currentFilter === 'active') return !t.completed;
                 if (currentFilter === 'completed') return t.completed;
@@ -761,7 +843,7 @@
             emptyState.classList.add('hidden');
 
             filteredTasks.forEach((task) => {
-                const realIndex = tasks.findIndex(t => t.id === task.id);
+                const realIndex = window.tasks.findIndex(t => t.id === task.id);
                 const item = document.createElement('div');
                 item.className = `task-item flex items-center justify-between p-3.5 rounded-xl border transition group ${
                     task.completed 
@@ -795,7 +877,7 @@
                             <button onclick="moveTask(${realIndex}, -1)" ${realIndex === 0 ? 'disabled class="p-1 text-slate-200 dark:text-slate-700 cursor-not-allowed"' : 'class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"'} title="Move Up">
                                 <i class="fas fa-chevron-up text-xs"></i>
                             </button>
-                            <button onclick="moveTask(${realIndex}, 1)" ${realIndex === tasks.length - 1 ? 'disabled class="p-1 text-slate-200 dark:text-slate-700 cursor-not-allowed"' : 'class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"'} title="Move Down">
+                            <button onclick="moveTask(${realIndex}, 1)" ${realIndex === window.tasks.length - 1 ? 'disabled class="p-1 text-slate-200 dark:text-slate-700 cursor-not-allowed"' : 'class="p-1 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200"'} title="Move Down">
                                 <i class="fas fa-chevron-down text-xs"></i>
                             </button>
                         </div>
@@ -804,7 +886,7 @@
                             ${formatMinutes(task.minutes)}
                         </span>
 
-                        <button onclick="openEditModal(${task.id})" title="Edit & Reschedule" class="p-1.5 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">
+                        <button onclick="openEditModal(${task.id})" title="Edit Task" class="p-1.5 text-slate-400 hover:text-brand-600 dark:hover:text-brand-400 transition">
                             <i class="fas fa-pen-to-square"></i>
                         </button>
 
@@ -822,9 +904,8 @@
             }
         }
 
-        // Render Interactive Calendar Chart
         function renderCalendarChart() {
-            timelineStartLabel.textContent = formatClockTime(parseTimeString(config.startTime));
+            timelineStartLabel.textContent = formatClockTime(parseTimeString(window.config.startTime));
             timelineChart.innerHTML = '';
 
             const timedTasks = getCalculatedTasksWithTimings();
@@ -891,6 +972,9 @@
                 }[m];
             });
         }
+
+        window.renderTasks = renderTasks;
+        window.updateMetrics = updateMetrics;
     </script>
 </body>
 </html>
