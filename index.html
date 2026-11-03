@@ -321,8 +321,16 @@
         import { getFirestore, doc, setDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
         const appId = typeof __app_id !== 'undefined' ? __app_id : 'day-schedule-app';
-        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : null;
-
+const firebaseConfig = {
+  apiKey: "AIzaSyB_OnaEUOH9-lWOzMJty0lGbqwhpPA9oZ4",
+  authDomain: "task-planner-aae8e.firebaseapp.com",
+  databaseURL: "https://task-planner-aae8e-default-rtdb.firebaseio.com",
+  projectId: "task-planner-aae8e",
+  storageBucket: "task-planner-aae8e.firebasestorage.app",
+  messagingSenderId: "225063646607",
+  appId: "1:225063646607:web:36e2b24e21d633109cc7fa",
+  measurementId: "G-BKEH2VWSG7"
+};
         let db = null;
         let auth = null;
         let currentUser = null;
